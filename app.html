@@ -1,1 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AntiSnipe Hook — Fair Token Launches on X Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #06060f;
+  --bg2:     #0c0c1a;
+  --bg3:     #111125;
+  --white:   #eff0f6;
+  --muted:   rgba(239,240,246,0.45);
+  --muted2:  rgba(239,240,246,0.2);
+  --green:   #00ffa3;
+  --green2:  #00cc82;
+  --gd:      rgba(0,255,163,0.08);
+  --gb:      rgba(0,255,163,0.22);
+  --red:     #ff4060;
+  --rd:      rgba(255,64,96,0.1);
+  --rb:      rgba(255,64,96,0.28);
+  --blue:    #5b9fff;
+  --yellow:  #ffd166;
+  --orange:  #ff8c42;
+  --border:  rgba(255,255,255,0.07);
+  --radius:  8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:'Syne',sans-serif;overflow-x:hidden;line-height:1.6;cursor:none}
+
+/* cursor */
+.cur{position:fixed;width:10px;height:10px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:.15s}
+.cur-r{position:fixed;width:32px;height:32px;border:1.5px solid var(--green);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .1s ease;opacity:.4}
+
+/* grid */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+background-image:linear-gradient(rgba(0,255,163,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,163,.025) 1px,transparent 1px);
+background-size:50px 50px}
+
+/* ---------- NAV ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 5vw;
+display:flex;align-items:center;justify-content:space-between;
+background:rgba(6,6,15,.9);backdrop-filter:blur(20px);
+border-bottom:1px solid var(--border)}
+.nav-logo{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.nav-logo span{color:var(--green)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;
+color:var(--muted);text-decoration:none;text-transform:uppercase;transition:.2s}
+.nav-links a:hover{color:var(--green)}
+#walletBtn{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;
+padding:10px 20px;border-radius:4px;border:1px solid var(--gb);
+background:var(--gd);color:var(--green);cursor:none;transition:.2s;white-space:nowrap}
+#walletBtn:hover{background:rgba(0,255,163,.15);border-color:var(--green)}
+#walletBtn.connected{background:rgba(0,255,163,.12);border-color:var(--green)}
+
+/* ---------- SECTIONS ---------- */
+section{position:relative;z-index:1}
+.container{max-width:1080px;margin:0 auto;padding:0 5vw}
+.label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.3em;
+text-transform:uppercase;display:block;margin-bottom:14px}
+.lg{color:var(--green)}.lr{color:var(--red)}.lb{color:var(--blue)}.ly{color:var(--yellow)}
+.sec-title{font-size:clamp(32px,4.5vw,56px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:18px}
+.sec-body{font-size:15px;color:var(--muted);line-height:1.85;max-width:580px}
+.divider{border:none;border-top:1px solid var(--border);margin:0}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- HERO ---------- */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+padding:140px 5vw 100px;overflow:hidden}
+.orb1{position:absolute;width:600px;height:600px;border-radius:50%;
+background:radial-gradient(circle,rgba(0,255,163,.1) 0%,transparent 70%);
+top:-150px;right:-100px;pointer-events:none;animation:breathe 5s ease-in-out infinite}
+.orb2{position:absolute;width:400px;height:400px;border-radius:50%;
+background:radial-gradient(circle,rgba(255,64,96,.07) 0%,transparent 70%);
+bottom:0;left:10%;pointer-events:none;animation:breathe 7s ease-in-out infinite reverse}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+.pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.pill{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;
+padding:5px 14px;border-radius:2px;text-transform:uppercase}
+.pg{background:var(--gd);color:var(--green);border:1px solid var(--gb)}
+.pr{background:var(--rd);color:var(--red);border:1px solid var(--rb)}
+.pb{background:rgba(91,159,255,.1);color:var(--blue);border:1px solid rgba(91,159,255,.28)}
+
+.hero-h1{font-size:clamp(58px,10vw,128px);font-weight:800;letter-spacing:-.04em;line-height:.92;margin-bottom:26px}
+.hero-h1 .hl{color:var(--green)}
+.hero-desc{font-size:clamp(15px,1.7vw,19px);color:var(--muted);max-width:520px;line-height:1.75;margin-bottom:44px}
+.hero-contract{font-family:'Space Mono',monospace;font-size:12px;
+background:rgba(0,255,163,.04);border:1px solid var(--gb);border-left:3px solid var(--green);
+padding:14px 20px;border-radius:4px;display:inline-block}
+.hero-contract .cl{font-size:9px;letter-spacing:.2em;color:var(--muted2);display:block;margin-bottom:5px;text-transform:uppercase}
+.hero-contract .ca{color:var(--green);word-break:break-all}
+.scroll-hint{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+display:flex;flex-direction:column;align-items:center;gap:8px;
+font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--muted2);text-transform:uppercase}
+.sl{width:1px;height:44px;background:linear-gradient(to bottom,var(--muted2),transparent);animation:sl 2s ease-in-out infinite}
+@keyframes sl{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ---------- HOW IT WORKS ---------- */
+.how{padding:120px 0;border-top:1px solid var(--border)}
+.how-hdr{text-align:center;margin-bottom:60px}
+.how-hdr .sec-body{margin:0 auto}
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.phase{padding:36px 24px;background:var(--bg2);position:relative;overflow:hidden;transition:.3s}
+.phase:hover{background:var(--bg3)}
+.ph-num{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:16px;opacity:.08}
+.ph-blk{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2);margin-bottom:12px;letter-spacing:.08em}
+.ph-fee{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:10px}
+.ph-name{font-size:13px;font-weight:700;margin-bottom:6px}
+.ph-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.ph-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.p1 .ph-fee,.p1 .ph-name{color:var(--red)} .p1 .ph-bar{background:var(--red)}
+.p2 .ph-fee,.p2 .ph-name{color:var(--orange)} .p2 .ph-bar{background:var(--orange)}
+.p3 .ph-fee,.p3 .ph-name{color:var(--yellow)} .p3 .ph-bar{background:var(--yellow)}
+.p4 .ph-fee,.p4 .ph-name{color:var(--green)} .p4 .ph-bar{background:var(--green)}
+
+/* ---------- APP SECTION ---------- */
+.app{padding:120px 0;background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.app-hdr{text-align:center;margin-bottom:64px}
+
+.steps-row{display:flex;gap:0;margin-bottom:48px;position:relative}
+.steps-row::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border)}
+.step-tab{flex:1;padding:16px 20px;background:transparent;border:none;border-bottom:2px solid transparent;
+font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--muted);
+text-transform:uppercase;cursor:none;transition:.2s;text-align:center;position:relative;z-index:1}
+.step-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.step-tab .snum{display:block;font-size:20px;font-weight:800;margin-bottom:4px;letter-spacing:-.02em;font-family:'Syne',sans-serif}
+
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:36px;max-width:680px;margin:0 auto}
+.card-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.card-desc{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.7}
+
+/* form elements */
+.form-group{margin-bottom:20px}
+.form-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;
+color:var(--muted2);text-transform:uppercase;display:block;margin-bottom:8px}
+.form-input{width:100%;background:var(--bg2);border:1px solid var(--border);
+border-radius:4px;padding:13px 16px;font-family:'Space Mono',monospace;
+font-size:13px;color:var(--white);outline:none;transition:.2s}
+.form-input:focus{border-color:var(--gb);background:rgba(0,255,163,.03)}
+.form-input::placeholder{color:var(--muted2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* buttons */
+.btn{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;
+padding:14px 28px;border-radius:4px;border:none;cursor:none;
+transition:all .2s;width:100%;display:block;text-align:center}
+.btn-primary{background:var(--green);color:#06060f;font-weight:700}
+.btn-primary:hover:not(:disabled){background:var(--green2);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--white);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--gb);color:var(--green)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* status cards */
+.status-box{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-top:20px;display:none}
+.status-box.show{display:block}
+.status-row{display:flex;justify-content:space-between;align-items:center;
+padding:10px 0;border-bottom:1px solid var(--border);font-family:'Space Mono',monospace;font-size:12px}
+.status-row:last-child{border-bottom:none}
+.sr-key{color:var(--muted2);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.sr-val{color:var(--green)}
+.sr-val.red{color:var(--red)}
+.sr-val.yellow{color:var(--yellow)}
+.sr-val.orange{color:var(--orange)}
+
+/* tx box */
+.tx-box{background:var(--gd);border:1px solid var(--gb);border-radius:4px;
+padding:16px 20px;margin-top:16px;display:none}
+.tx-box.show{display:block}
+.tx-hash{font-family:'Space Mono',monospace;font-size:11px;color:var(--green);word-break:break-all}
+.tx-link{font-family:'Space Mono',monospace;font-size:10px;color:var(--green);
+text-decoration:none;letter-spacing:.08em;border:1px solid var(--gb);
+padding:6px 14px;border-radius:2px;display:inline-block;margin-top:10px;cursor:none}
+.tx-link:hover{background:var(--gd)}
+
+/* alert */
+.alert{padding:14px 18px;border-radius:4px;font-family:'Space Mono',monospace;
+font-size:12px;margin-bottom:16px;display:none;line-height:1.6}
+.alert.show{display:block}
+.alert-err{background:var(--rd);border:1px solid var(--rb);color:var(--red)}
+.alert-ok{background:var(--gd);border:1px solid var(--gb);color:var(--green)}
+.alert-warn{background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);color:var(--yellow)}
+
+/* spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(6,6,15,.3);
+border-top:2px solid #06060f;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- CHECK STATUS ---------- */
+.check{padding:100px 0;border-top:1px solid var(--border)}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.phase-indicator{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:none}
+.phase-indicator.show{display:block}
+.pi-top{padding:24px;border-bottom:1px solid var(--border);text-align:center}
+.pi-phase{font-size:32px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.pi-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--muted2);text-transform:uppercase}
+.pi-stats{padding:20px}
+.pi-stat{display:flex;justify-content:space-between;padding:10px 0;
+border-bottom:1px solid var(--border);font-family:'Space Mono',monospace;font-size:11px}
+.pi-stat:last-child{border-bottom:none}
+.pi-k{color:var(--muted2);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.pi-v{color:var(--green)}
+
+/* ---------- ABOUT ---------- */
+.about{padding:100px 0;background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.feat-list{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.feat{padding:20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);transition:.3s}
+.feat:hover{border-color:var(--gb);background:rgba(0,255,163,.02)}
+.feat-title{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--green)}
+.feat-desc{font-size:13px;color:var(--muted);line-height:1.7}
+.code-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cc-hdr{background:var(--bg3);padding:12px 18px;border-bottom:1px solid var(--border);
+display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2)}
+.cd{width:10px;height:10px;border-radius:50%}.cdr{background:#ff5f57}.cdy{background:#ffbd2e}.cdg{background:#28c840}
+.cc-body{padding:22px 18px;font-family:'Space Mono',monospace;font-size:12px;line-height:2;overflow-x:auto}
+.kw{color:var(--blue)}.fn{color:var(--green)}.cm{color:rgba(239,240,246,.2)}.nm{color:var(--yellow)}.st{color:var(--red)}
+
+/* ---------- FOOTER ---------- */
+footer{border-top:1px solid var(--border);padding:48px 5vw}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px}
+.footer-brand{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.footer-brand span{color:var(--green)}
+.footer-links{display:flex;flex-direction:column;gap:10px;text-align:right}
+.footer-x{display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;
+font-size:12px;color:var(--green);text-decoration:none;justify-content:flex-end}
+.footer-x:hover{text-decoration:underline}
+.footer-by{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2);letter-spacing:.1em;text-align:right}
+
+/* ---------- NETWORK BADGE ---------- */
+.net-badge{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;
+padding:5px 12px;border-radius:2px;background:var(--gd);border:1px solid var(--gb);
+color:var(--green);display:inline-flex;align-items:center;gap:6px;margin-bottom:24px}
+.net-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.5s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* responsive */
+@media(max-width:768px){
+  .phases{grid-template-columns:1fr 1fr}
+  .check-grid,.about-grid,.form-row{grid-template-columns:1fr}
+  .steps-row{flex-direction:column}
+  .nav-links{display:none}
+  footer .footer-links{text-align:left}
+  .footer-x{justify-content:flex-start}
+  .footer-by{text-align:left}
+}
+@media(max-width:480px){.phases{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="cur" id="cur"></div>
+<div class="cur-r" id="curr"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Anti<span>Snipe</span> Hook</div>
+  <ul class="nav-links">
+    <li><a href="#how">How it Works</a></li>
+    <li><a href="#launch">Launch</a></li>
+    <li><a href="#check">Check Status</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="/antinsnipe-hook-full.html"
+       style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;
+              padding:9px 18px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);
+              color:rgba(239,240,246,0.5);text-decoration:none;transition:.2s;white-space:nowrap"
+       onmouseover="this.style.color='#00ffa3';this.style.borderColor='rgba(0,255,163,0.3)'"
+       onmouseout="this.style.color='rgba(239,240,246,0.5)';this.style.borderColor='rgba(255,255,255,0.1)'">
+      ← Home
+    </a>
+    <button id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="orb1"></div>
+  <div class="orb2"></div>
+  <div class="container">
+    <div class="pills reveal">
+      <span class="pill pg">✦ Uniswap V4 Hook</span>
+      <span class="pill pr">✦ Anti-Bot Protection</span>
+      <span class="pill pb">✦ X Layer Testnet</span>
+    </div>
+    <h1 class="hero-h1 reveal">Anti<span class="hl">Snipe</span><br>Hook</h1>
+    <p class="hero-desc reveal">
+      A Uniswap V4 Hook that automatically protects new token launches
+      from sniper bots — using trustless, on-chain fee decay.
+      Connect your wallet and launch safely.
+    </p>
+    <div class="hero-contract reveal">
+      <span class="cl">Verified Contract — X Layer Testnet</span>
+      <span class="ca">0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4</span>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><div class="sl"></div></div>
+</section>
+<hr class="divider"/>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="how-hdr reveal">
+      <span class="label lg">How it Works</span>
+      <h2 class="sec-title">Fee decay in four phases.</h2>
+      <p class="sec-body" style="margin:0 auto;text-align:center">
+        The Hook automatically transitions through four protection phases
+        based on blocks elapsed since pool creation. Zero configuration needed.
+      </p>
+    </div>
+    <div class="phases reveal">
+      <div class="phase p1">
+        <div class="ph-num">01</div>
+        <div class="ph-blk">Blocks 0 → 1,000</div>
+        <div class="ph-fee">90%</div>
+        <div class="ph-name">Launch Shield</div>
+        <div class="ph-desc">Bots pay 90% fee. Completely unprofitable. They leave.</div>
+        <div class="ph-bar"></div>
+      </div>
+      <div class="phase p2">
+        <div class="ph-num">02</div>
+        <div class="ph-blk">Blocks 1K → 5K</div>
+        <div class="ph-fee">50%</div>
+        <div class="ph-name">High Guard</div>
+        <div class="ph-desc">Still painful for large bot buys. Market stabilizes.</div>
+        <div class="ph-bar"></div>
+      </div>
+      <div class="phase p3">
+        <div class="ph-num">03</div>
+        <div class="ph-blk">Blocks 5K → 10K</div>
+        <div class="ph-fee">10%</div>
+        <div class="ph-name">Cool Down</div>
+        <div class="ph-desc">Price discovery underway. Community entering fairly.</div>
+        <div class="ph-bar"></div>
+      </div>
+      <div class="phase p4">
+        <div class="ph-num">04</div>
+        <div class="ph-blk">Block 10,000+</div>
+        <div class="ph-fee">0.3%</div>
+        <div class="ph-name">Normal Trading</div>
+        <div class="ph-desc">Standard Uniswap fee. Full open trading resumes.</div>
+        <div class="ph-bar"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- LAUNCH APP -->
+<section class="app" id="launch">
+  <div class="container">
+    <div class="app-hdr reveal">
+      <span class="label lg">Launch App</span>
+      <h2 class="sec-title">Protect your token launch.</h2>
+      <p class="sec-body" style="margin:0 auto;text-align:center">
+        Connect your wallet, enter your token details, and activate
+        AntiSnipe Hook protection on X Layer testnet.
+      </p>
+    </div>
+
+    <!-- Wallet warning -->
+    <div class="alert alert-warn show" id="walletWarn">
+      ⚠ Please connect your MetaMask wallet to use the launch app.
+    </div>
+
+    <!-- Step tabs -->
+    <div class="steps-row">
+      <button class="step-tab active" onclick="showStep(1)">
+        <span class="snum">01</span>Connect
+      </button>
+      <button class="step-tab" onclick="showStep(2)">
+        <span class="snum">02</span>Token Details
+      </button>
+      <button class="step-tab" onclick="showStep(3)">
+        <span class="snum">03</span>Activate Hook
+      </button>
+      <button class="step-tab" onclick="showStep(4)">
+        <span class="snum">04</span>Explorer
+      </button>
+    </div>
+
+    <!-- STEP 1: Connect -->
+    <div class="step-panel active" id="step1">
+      <div class="card">
+        <div class="card-title">Connect Your Wallet</div>
+        <div class="card-desc">
+          Make sure MetaMask is installed and connected to X Layer Testnet (Chain ID: 195).
+          We'll auto-switch you to the correct network.
+        </div>
+        <div class="alert alert-err" id="connectErr"></div>
+        <div id="walletInfo" style="display:none">
+          <div class="net-badge"><div class="net-dot"></div>Connected to X Layer Testnet</div>
+          <div class="status-box show">
+            <div class="status-row"><span class="sr-key">Wallet Address</span><span class="sr-val" id="displayAddr">—</span></div>
+            <div class="status-row"><span class="sr-key">Network</span><span class="sr-val">X Layer Testnet (195)</span></div>
+            <div class="status-row"><span class="sr-key">OKB Balance</span><span class="sr-val" id="displayBal">—</span></div>
+          </div>
+          <br>
+          <button class="btn btn-primary" onclick="showStep(2)">Continue to Token Details →</button>
+        </div>
+        <button class="btn btn-primary" id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Token Details -->
+    <div class="step-panel" id="step2">
+      <div class="card">
+        <div class="card-title">Enter Token Details</div>
+        <div class="card-desc">
+          Enter your already-deployed token address, or enter details to track a new launch.
+          Your token must be deployed on X Layer Testnet.
+        </div>
+        <div class="alert alert-err" id="tokenErr"></div>
+        <div class="form-group">
+          <label class="form-label">Your Token Contract Address</label>
+          <input class="form-input" id="tokenAddr" placeholder="0x... (deployed ERC20 on X Layer Testnet)" type="text"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Token Name</label>
+            <input class="form-input" id="tokenName" placeholder="e.g. My Token" type="text"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Token Symbol</label>
+            <input class="form-input" id="tokenSymbol" placeholder="e.g. MTK" type="text"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Paired Token Address (e.g. WOKB or USDT on testnet)</label>
+          <input class="form-input" id="pairedAddr" placeholder="0x... paired token address" type="text" value="0x2222222222222222222222222222222222222222"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pool Fee Tier</label>
+          <select class="form-input" id="feeTier" style="cursor:none">
+            <option value="3000">0.3% (3000) — Standard</option>
+            <option value="500">0.05% (500) — Stable</option>
+            <option value="10000">1% (10000) — Exotic</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="validateToken()">Continue to Activate Hook →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Activate Hook -->
+    <div class="step-panel" id="step3">
+      <div class="card">
+        <div class="card-title">Activate AntiSnipe Protection</div>
+        <div class="card-desc">
+          This will call <code style="color:var(--green);font-family:'Space Mono',monospace">afterInitialize()</code>
+          on the AntiSnipe Hook contract, registering your pool and starting the protection timer.
+        </div>
+        <div class="alert alert-err" id="hookErr"></div>
+        <div class="alert alert-ok" id="hookOk"></div>
+
+        <!-- Pool summary -->
+        <div class="status-box show" id="poolSummary">
+          <div class="status-row"><span class="sr-key">Token</span><span class="sr-val" id="sumName">—</span></div>
+          <div class="status-row"><span class="sr-key">Token Address</span><span class="sr-val" id="sumAddr">—</span></div>
+          <div class="status-row"><span class="sr-key">Hook Address</span><span class="sr-val" style="font-size:10px">0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4</span></div>
+          <div class="status-row"><span class="sr-key">Fee Tier</span><span class="sr-val" id="sumFee">—</span></div>
+          <div class="status-row"><span class="sr-key">Network</span><span class="sr-val">X Layer Testnet</span></div>
+          <div class="status-row"><span class="sr-key">Initial Fee</span><span class="sr-val red">90% (Launch Shield)</span></div>
+        </div>
+
+        <br>
+        <button class="btn btn-primary" id="activateBtn" onclick="activateHook()">
+          🛡 Activate AntiSnipe Protection
+        </button>
+
+        <!-- TX result -->
+        <div class="tx-box" id="hookTxBox">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2);margin-bottom:8px;letter-spacing:.15em;text-transform:uppercase">Transaction Hash</div>
+          <div class="tx-hash" id="hookTxHash">—</div>
+          <a class="tx-link" id="hookTxLink" href="#" target="_blank">View on X Layer Explorer →</a>
+          <br><br>
+          <button class="btn btn-outline" onclick="showStep(4)" style="margin-top:8px">View Full Explorer Details →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Explorer -->
+    <div class="step-panel" id="step4">
+      <div class="card">
+        <div class="card-title">View on X Layer Explorer</div>
+        <div class="card-desc">
+          Your AntiSnipe Hook is now active. View your contract and transactions on the X Layer Testnet explorer.
+        </div>
+
+        <div class="status-box show">
+          <div class="status-row">
+            <span class="sr-key">Hook Contract</span>
+            <a href="https://www.okx.com/explorer/xlayer-test/address/0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4" target="_blank" style="color:var(--green);font-family:'Space Mono',monospace;font-size:11px;text-decoration:none">View Hook Contract ↗</a>
+          </div>
+          <div class="status-row" id="tokenExplorerRow" style="display:none">
+            <span class="sr-key">Your Token</span>
+            <a id="tokenExplorerLink" href="#" target="_blank" style="color:var(--green);font-family:'Space Mono',monospace;font-size:11px;text-decoration:none">View Token Contract ↗</a>
+          </div>
+          <div class="status-row" id="txExplorerRow" style="display:none">
+            <span class="sr-key">Activation TX</span>
+            <a id="txExplorerLink" href="#" target="_blank" style="color:var(--green);font-family:'Space Mono',monospace;font-size:11px;text-decoration:none">View Transaction ↗</a>
+          </div>
+        </div>
+
+        <br>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="https://www.okx.com/explorer/xlayer-test/address/0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4" target="_blank" style="text-decoration:none;flex:1">View Hook on Explorer ↗</a>
+          <button class="btn btn-outline" onclick="showStep(2)" style="flex:1">Launch Another Token</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- CHECK STATUS -->
+<section class="check" id="check">
+  <div class="container">
+    <div class="check-grid">
+      <div class="reveal">
+        <span class="label lb">Check Pool Status</span>
+        <h2 class="sec-title">See your protection phase.</h2>
+        <p class="sec-body" style="margin-bottom:28px">
+          Enter a Pool ID (bytes32) to check the current AntiSnipe protection phase.
+          Anyone can verify — fully transparent on-chain.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Pool ID (bytes32)</label>
+          <input class="form-input" id="checkPoolId" placeholder="0x... pool ID" type="text"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Or use your Token Address to auto-generate Pool ID</label>
+          <input class="form-input" id="checkTokenAddr" placeholder="0x... token address" type="text"/>
+        </div>
+        <button class="btn btn-primary" onclick="checkStatus()" style="margin-top:4px">Check Protection Status</button>
+        <div class="alert alert-err" id="checkErr" style="margin-top:16px"></div>
+      </div>
+
+      <div class="reveal">
+        <div class="phase-indicator" id="phaseIndicator">
+          <div class="pi-top">
+            <div class="pi-phase" id="phaseFee">—</div>
+            <div class="pi-label" id="phaseLabel">Current Fee</div>
+          </div>
+          <div class="pi-stats">
+            <div class="pi-stat"><span class="pi-k">Phase</span><span class="pi-v" id="phaseText">—</span></div>
+            <div class="pi-stat"><span class="pi-k">Launch Block</span><span class="pi-v" id="phaseLaunch">—</span></div>
+            <div class="pi-stat"><span class="pi-k">Current Block</span><span class="pi-v" id="phaseCurrent">—</span></div>
+            <div class="pi-stat"><span class="pi-k">Blocks Elapsed</span><span class="pi-v" id="phaseElapsed">—</span></div>
+            <div class="pi-stat"><span class="pi-k">Network</span><span class="pi-v">X Layer Testnet</span></div>
+          </div>
+        </div>
+
+        <!-- Default placeholder -->
+        <div id="phaseEmpty" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:48px;text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">🛡️</div>
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--muted2)">Enter a pool ID to<br>check protection status</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="divider"/>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="reveal">
+        <span class="label lg">About AntiSnipe Hook</span>
+        <h2 class="sec-title">Built for fair launches.</h2>
+        <p class="sec-body">
+          Every token launch on a DEX faces sniper bots in the first blocks.
+          AntiSnipe Hook solves this at the protocol level — inside the pool itself.
+          No admin keys. No off-chain setup. No trust required.
+        </p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-title">✦ afterInitialize()</div>
+            <div class="feat-desc">Records the exact launch block when pool is created. The protection timer starts here — immutable and on-chain.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-title">✦ beforeSwap()</div>
+            <div class="feat-desc">Intercepts every swap and calculates the correct fee based on blocks elapsed. Fully automatic. No human needed.</div>
+          </div>
+          <div class="feat">
+            <div class="feat-title">✦ getProtectionStatus()</div>
+            <div class="feat-desc">Anyone can verify which protection phase a pool is in. Complete transparency for your community.</div>
+          </div>
+        </div>
+      </div>
+      <div class="code-card reveal">
+        <div class="cc-hdr">
+          <div class="cd cdr"></div><div class="cd cdy"></div><div class="cd cdg"></div>
+          <span style="margin-left:8px">AntiSnipeHook.sol</span>
+        </div>
+        <div class="cc-body">
+<span class="cm">// Fee phases (in pips)</span>
+<span class="kw">uint24</span> <span class="kw">constant</span> <span class="nm">MAX_FEE</span>    = <span class="st">900000</span>; <span class="cm">// 90%</span>
+<span class="kw">uint24</span> <span class="kw">constant</span> <span class="nm">HIGH_FEE</span>   = <span class="st">500000</span>; <span class="cm">// 50%</span>
+<span class="kw">uint24</span> <span class="kw">constant</span> <span class="nm">MID_FEE</span>    = <span class="st">100000</span>; <span class="cm">// 10%</span>
+<span class="kw">uint24</span> <span class="kw">constant</span> <span class="nm">NORMAL_FEE</span> = <span class="st">3000</span>;   <span class="cm">// 0.3%</span>
+
+<span class="cm">// afterInitialize: record launch</span>
+<span class="kw">function</span> <span class="fn">afterInitialize</span>(...) {
+  poolLaunchBlock[poolId] = block.number;
+  <span class="kw">emit</span> <span class="fn">PoolLaunched</span>(poolId, block.number);
+}
+
+<span class="cm">// beforeSwap: apply decay fee</span>
+<span class="kw">function</span> <span class="fn">beforeSwap</span>(...) {
+  <span class="kw">uint256</span> elapsed =
+    block.number - launchBlock;
+
+  <span class="kw">if</span> (elapsed &lt;= <span class="st">1000</span>)  fee = <span class="nm">MAX_FEE</span>;
+  <span class="kw">else if</span> (elapsed &lt;= <span class="st">5000</span>)  fee = <span class="nm">HIGH_FEE</span>;
+  <span class="kw">else if</span> (elapsed &lt;= <span class="st">10000</span>) fee = <span class="nm">MID_FEE</span>;
+  <span class="kw">else</span>                        fee = <span class="nm">NORMAL_FEE</span>;
+}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Anti<span>Snipe</span> Hook</div>
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2);margin-top:8px">
+        Hook the Future Hackathon 2026<br>
+        X Layer × Uniswap V4 × Flap
+      </div>
+    </div>
+    <div class="footer-links">
+      <a class="footer-x" href="https://x.com/AntiSnipeh" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @AntiSnipeh
+      </a>
+      <div class="footer-by">Built by Mahesh Vishwakarma</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted2);letter-spacing:.08em;margin-top:4px">
+        0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const HOOK_ADDR = '0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4';
+const EXPLORER  = 'https://www.okx.com/explorer/xlayer-test';
+const XLAYER_CHAIN_ID = '0xC3'; // 195 in hex
+
+const XLAYER_PARAMS = {
+  chainId: XLAYER_CHAIN_ID,
+  chainName: 'X Layer Testnet',
+  nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
+  rpcUrls: ['https://testrpc.xlayer.tech'],
+  blockExplorerUrls: [EXPLORER]
+};
+
+const HOOK_ABI = [
+  'function afterInitialize(address sender, tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key, uint160 sqrtPriceX96, int24 tick) external returns (bytes4)',
+  'function getProtectionStatus(bytes32 poolId) external view returns (string)',
+  'function getCurrentFee(bytes32 poolId) external view returns (uint24, uint256)',
+  'function poolLaunchBlock(bytes32 poolId) external view returns (uint256)',
+  'function getPoolId(tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key) external pure returns (bytes32)'
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let provider, signer, walletAddress;
+let launchData = {};
+
+// ============================================================
+// CURSOR
+// ============================================================
+const cur = document.getElementById('cur');
+const curr = document.getElementById('curr');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+  curr.style.left = e.clientX + 'px';
+  curr.style.top  = e.clientY + 'px';
+});
+
+// ============================================================
+// SCROLL REVEAL
+// ============================================================
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); observer.unobserve(e.target); }});
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ============================================================
+// WALLET
+// ============================================================
+async function connectWallet() {
+  if (!window.ethereum) {
+    showAlert('connectErr', '⚠ MetaMask not found. Please install MetaMask to continue.', 'err');
+    return;
+  }
+  try {
+    // Request accounts
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    // Switch to X Layer testnet
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: XLAYER_CHAIN_ID }] });
+    } catch (se) {
+      if (se.code === 4902) {
+        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [XLAYER_PARAMS] });
+      } else throw se;
+    }
+
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer   = provider.getSigner();
+    walletAddress = await signer.getAddress();
+
+    const bal = await provider.getBalance(walletAddress);
+    const balEth = parseFloat(ethers.utils.formatEther(bal)).toFixed(4);
+
+    // Update UI
+    document.getElementById('displayAddr').textContent = walletAddress.slice(0,6) + '...' + walletAddress.slice(-4);
+    document.getElementById('displayBal').textContent  = balEth + ' OKB';
+    document.getElementById('walletInfo').style.display = 'block';
+    document.getElementById('connectBtn').style.display = 'none';
+    document.getElementById('walletWarn').style.display = 'none';
+    document.getElementById('walletBtn').textContent = walletAddress.slice(0,6)+'...'+walletAddress.slice(-4);
+    document.getElementById('walletBtn').classList.add('connected');
+
+    hideAlert('connectErr');
+  } catch(e) {
+    showAlert('connectErr', '✗ ' + (e.message || 'Connection failed'), 'err');
+  }
+}
+
+// ============================================================
+// STEPS
+// ============================================================
+function showStep(n) {
+  document.querySelectorAll('.step-tab').forEach((t,i) => t.classList.toggle('active', i===n-1));
+  document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===n-1));
+}
+
+// ============================================================
+// STEP 2 — VALIDATE TOKEN
+// ============================================================
+function validateToken() {
+  const addr   = document.getElementById('tokenAddr').value.trim();
+  const name   = document.getElementById('tokenName').value.trim();
+  const symbol = document.getElementById('tokenSymbol').value.trim();
+  const paired = document.getElementById('pairedAddr').value.trim();
+  const fee    = document.getElementById('feeTier').value;
+
+  if (!walletAddress) { showAlert('tokenErr', '⚠ Please connect your wallet first.', 'err'); return; }
+  if (!ethers.utils.isAddress(addr)) { showAlert('tokenErr', '✗ Invalid token address.', 'err'); return; }
+  if (!ethers.utils.isAddress(paired)) { showAlert('tokenErr', '✗ Invalid paired token address.', 'err'); return; }
+  if (!name || !symbol) { showAlert('tokenErr', '✗ Please enter token name and symbol.', 'err'); return; }
+
+  hideAlert('tokenErr');
+  launchData = { tokenAddr: addr, pairedAddr: paired, name, symbol, fee: parseInt(fee) };
+
+  document.getElementById('sumName').textContent = `${name} (${symbol})`;
+  document.getElementById('sumAddr').textContent = addr.slice(0,10) + '...' + addr.slice(-6);
+  document.getElementById('sumFee').textContent  = fee === '3000' ? '0.3% (Standard)' : fee === '500' ? '0.05% (Stable)' : '1% (Exotic)';
+
+  showStep(3);
+}
+
+// ============================================================
+// STEP 3 — ACTIVATE HOOK
+// ============================================================
+async function activateHook() {
+  if (!walletAddress) { showAlert('hookErr', '⚠ Wallet not connected.', 'err'); return; }
+
+  const btn = document.getElementById('activateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Activating...';
+  hideAlert('hookErr');
+  hideAlert('hookOk');
+
+  try {
+    const hook = new ethers.Contract(HOOK_ADDR, HOOK_ABI, signer);
+
+    // Sort token addresses (currency0 must be < currency1)
+    let c0, c1;
+    if (launchData.tokenAddr.toLowerCase() < launchData.pairedAddr.toLowerCase()) {
+      c0 = launchData.tokenAddr; c1 = launchData.pairedAddr;
+    } else {
+      c0 = launchData.pairedAddr; c1 = launchData.tokenAddr;
+    }
+
+    const poolKey = {
+      currency0: c0,
+      currency1: c1,
+      fee: launchData.fee,
+      tickSpacing: 60,
+      hooks: HOOK_ADDR
+    };
+
+    const INITIAL_SQRT_PRICE = '79228162514264337593543950336';
+    const tx = await hook.afterInitialize(walletAddress, poolKey, INITIAL_SQRT_PRICE, 0);
+
+    btn.innerHTML = '<span class="spinner"></span>Waiting for confirmation...';
+    const receipt = await tx.wait();
+
+    const txHash = receipt.transactionHash;
+    const explorerUrl = `${EXPLORER}/tx/${txHash}`;
+
+    // Store for step 4
+    launchData.txHash = txHash;
+    launchData.explorerUrl = explorerUrl;
+    launchData.tokenExplorer = `${EXPLORER}/address/${launchData.tokenAddr}`;
+
+    // Show results
+    document.getElementById('hookTxHash').textContent = txHash;
+    document.getElementById('hookTxLink').href = explorerUrl;
+    document.getElementById('hookTxBox').classList.add('show');
+
+    showAlert('hookOk', '✅ AntiSnipe protection activated! Your pool is now protected.', 'ok');
+    btn.disabled = false;
+    btn.innerHTML = '✅ Protection Active!';
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '🛡 Activate AntiSnipe Protection';
+    let msg = e.message || 'Transaction failed';
+    if (msg.includes('user rejected')) msg = 'Transaction rejected by user.';
+    showAlert('hookErr', '✗ ' + msg, 'err');
+  }
+}
+
+// ============================================================
+// STEP 4 — EXPLORER LINKS
+// ============================================================
+function showStep4WithData() {
+  if (launchData.tokenExplorer) {
+    document.getElementById('tokenExplorerRow').style.display = 'flex';
+    document.getElementById('tokenExplorerLink').href = launchData.tokenExplorer;
+  }
+  if (launchData.txHash) {
+    document.getElementById('txExplorerRow').style.display = 'flex';
+    document.getElementById('txExplorerLink').href = launchData.explorerUrl;
+    document.getElementById('txExplorerLink').textContent = launchData.txHash.slice(0,20) + '... ↗';
+  }
+}
+
+// Override showStep to inject data on step 4
+const _origShowStep = showStep;
+window.showStep = function(n) {
+  _origShowStep(n);
+  if (n === 4) showStep4WithData();
+};
+
+// ============================================================
+// CHECK STATUS
+// ============================================================
+async function checkStatus() {
+  hideAlert('checkErr');
+  if (!window.ethereum) { showAlert('checkErr', '⚠ MetaMask required to check status.', 'err'); return; }
+
+  try {
+    const _provider = provider || new ethers.providers.JsonRpcProvider('https://testrpc.xlayer.tech');
+    const hook = new ethers.Contract(HOOK_ADDR, HOOK_ABI, _provider);
+
+    let poolId = document.getElementById('checkPoolId').value.trim();
+    const tokenInput = document.getElementById('checkTokenAddr').value.trim();
+
+    // If token address provided, build pool key and get ID
+    if (!poolId && ethers.utils.isAddress(tokenInput)) {
+      let c0 = tokenInput, c1 = '0x2222222222222222222222222222222222222222';
+      if (c0.toLowerCase() > c1.toLowerCase()) { [c0,c1]=[c1,c0]; }
+      const poolKey = { currency0:c0, currency1:c1, fee:3000, tickSpacing:60, hooks:HOOK_ADDR };
+      poolId = await hook.getPoolId(poolKey);
+    }
+
+    if (!poolId || poolId.length < 10) { showAlert('checkErr', '✗ Please enter a valid pool ID or token address.', 'err'); return; }
+
+    const [currentFee, blocksElapsed] = await hook.getCurrentFee(poolId);
+    const phase = await hook.getProtectionStatus(poolId);
+    const launchBlock = await hook.poolLaunchBlock(poolId);
+    const currentBlock = await _provider.getBlockNumber();
+
+    const feePercent = currentFee === 900000 ? '90%' : currentFee === 500000 ? '50%' : currentFee === 100000 ? '10%' : '0.3%';
+    const feeColor = currentFee === 900000 ? '#ff4060' : currentFee === 500000 ? '#ff8c42' : currentFee === 100000 ? '#ffd166' : '#00ffa3';
+
+    document.getElementById('phaseFee').textContent = feePercent;
+    document.getElementById('phaseFee').style.color = feeColor;
+    document.getElementById('phaseLabel').textContent = 'Current Fee';
+    document.getElementById('phaseText').textContent  = phase;
+    document.getElementById('phaseText').style.color  = feeColor;
+    document.getElementById('phaseLaunch').textContent   = launchBlock.toString() === '0' ? 'Not launched' : launchBlock.toString();
+    document.getElementById('phaseCurrent').textContent  = currentBlock.toString();
+    document.getElementById('phaseElapsed').textContent  = blocksElapsed.toString() + ' blocks';
+
+    document.getElementById('phaseIndicator').classList.add('show');
+    document.getElementById('phaseEmpty').style.display = 'none';
+
+  } catch(e) {
+    showAlert('checkErr', '✗ ' + (e.message || 'Failed to fetch status'), 'err');
+  }
+}
+
+// ============================================================
+// UTIL
+// ============================================================
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert alert-' + type + ' show';
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) { el.className = 'alert'; }
+}
+
+// Listen for account / chain changes
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', () => location.reload());
+  window.ethereum.on('chainChanged',    () => location.reload());
+}
+</script>
+</body>
+</html>
 
