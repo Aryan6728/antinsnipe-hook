@@ -394,7 +394,7 @@ color:var(--green);display:inline-flex;align-items:center;gap:6px;margin-bottom:
       <div class="card">
         <div class="card-title">Connect Your Wallet</div>
         <div class="card-desc">
-          Make sure MetaMask is installed and connected to X Layer Testnet (Chain ID: 195).
+          Make sure MetaMask is installed and connected to X Layer Testnet (Chain ID: 1952).
           We'll auto-switch you to the correct network.
         </div>
         <div class="alert alert-err" id="connectErr"></div>
@@ -402,7 +402,7 @@ color:var(--green);display:inline-flex;align-items:center;gap:6px;margin-bottom:
           <div class="net-badge"><div class="net-dot"></div>Connected to X Layer Testnet</div>
           <div class="status-box show">
             <div class="status-row"><span class="sr-key">Wallet Address</span><span class="sr-val" id="displayAddr">—</span></div>
-            <div class="status-row"><span class="sr-key">Network</span><span class="sr-val">X Layer Testnet (195)</span></div>
+            <div class="status-row"><span class="sr-key">Network</span><span class="sr-val">X Layer Testnet (1952)</span></div>
             <div class="status-row"><span class="sr-key">OKB Balance</span><span class="sr-val" id="displayBal">—</span></div>
           </div>
           <br>
@@ -662,10 +662,10 @@ color:var(--green);display:inline-flex;align-items:center;gap:6px;margin-bottom:
 // ============================================================
 const HOOK_ADDR = '0xDB7D45ea5B0F1C4F7176dd0fF98099e55e8424E4';
 const EXPLORER  = 'https://www.okx.com/explorer/xlayer-test';
-const XLAYER_CHAIN_ID = '0xC3'; // 195 in hex
+const XLAYER_CHAIN_ID = '0x7A0'; // 1952 in hex
 
 const XLAYER_PARAMS = {
-  chainId: XLAYER_CHAIN_ID,
+  chainId: '0x7A0',
   chainName: 'X Layer Testnet',
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
   rpcUrls: ['https://testrpc.xlayer.tech'],
